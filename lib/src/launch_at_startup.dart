@@ -2,13 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-
-import 'app_auto_launcher_impl_linux.dart';
-import 'app_auto_launcher_impl_macos.dart';
-import 'app_auto_launcher_impl_windows.dart'
+import 'package:launch_at_startup/src/app_auto_launcher.dart';
+import 'package:launch_at_startup/src/app_auto_launcher_impl_linux.dart';
+import 'package:launch_at_startup/src/app_auto_launcher_impl_macos.dart';
+import 'package:launch_at_startup/src/app_auto_launcher_impl_noop.dart';
+import 'package:launch_at_startup/src/app_auto_launcher_impl_windows.dart'
     if (dart.library.html) 'app_auto_launcher_impl_windows_noop.dart';
-import 'app_auto_launcher_impl_noop.dart';
-import 'app_auto_launcher.dart';
 
 class LaunchAtStartup {
   LaunchAtStartup._();
@@ -21,21 +20,35 @@ class LaunchAtStartup {
   void setup({
     required String appName,
     required String appPath,
+    String? packageName,
+    List<String> args = const [],
   }) {
     if (!kIsWeb && Platform.isLinux) {
       _appAutoLauncher = AppAutoLauncherImplLinux(
         appName: appName,
         appPath: appPath,
+        args: args,
       );
     } else if (!kIsWeb && Platform.isMacOS) {
       _appAutoLauncher = AppAutoLauncherImplMacOS(
         appName: appName,
         appPath: appPath,
+        args: args,
       );
     } else if (!kIsWeb && Platform.isWindows) {
+      if (packageName != null && isRunningInMsix(packageName)) {
+        _appAutoLauncher = AppAutoLauncherImplWindowsMsix(
+          appName: appName,
+          appPath: appPath,
+          packageName: packageName,
+          args: args,
+        );
+        return;
+      }
       _appAutoLauncher = AppAutoLauncherImplWindows(
         appName: appName,
         appPath: appPath,
+        args: args,
       );
     }
   }
